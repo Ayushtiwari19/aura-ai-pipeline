@@ -1,78 +1,61 @@
-# AuraGen AI Prompt Engineering Pipeline
+# aura-ai-pipeline
 
-This folder contains the AI generation pipeline for AuraGen's self-healing UI system.
-Owned by: Ayush (AI Prompt Engineering)
+This is the AI pipeline for **AuraGen** — the self-healing UI project I'm building with my team as part of the Advanced Generative AI Engineering program at Infotact Solutions.
 
-## What this does
+My part of AuraGen: given a natural language prompt (or a frustration signal from the frontend), generate a valid, styled React component. That's it — no WebSocket handling, no frontend rendering, no telemetry logic. Just prompt in, JSX out.
 
-Takes a text description (e.g. "Build a modern React login page with Tailwind CSS")
-and returns AI-generated React component code, ready to be rendered or saved.
+## Team
 
-This is the piece that turns a `HIGH_FRUSTRATION` signal into an actual fix.
+- **Ullas** — frontend (Next.js/Tailwind dashboard, telemetry tracker, cognitive load meter)
+- **Ayush (me)** — this repo: prompt engineering + `generateComponent()`
+- **Goutham** — backend (WebSocket server that connects Ullas's frontend telemetry to my pipeline)
 
-## How to use it
+I'm also team lead on this, so this README is written to be handed off to both of them, not just documentation for myself.
 
-```javascript
-const { generateComponent } = require('./generate-component');
+## What's actually in here
 
-const result = await generateComponent('Build a modern React login page with Tailwind CSS');
+- `system-prompt.js` — the system prompt that forces the model to always return a `WizardForm` component styled with Tailwind, and nothing else
+- `generate-component.js` — the main function, `generateComponent(prompt)`. Takes a prompt, calls the model, returns `{ success, jsx, error }`
+- `validate-component.js` — sanity-checks whatever the model returns: correct export name, braces actually balanced, no stray markdown fences, no sneaky `fetch()` calls, and that it's not suspiciously short
+- `test-login-page.js` / `test-weather-app.js` — real test prompts I used to confirm the pipeline actually produces usable JSX, not just JSX that looks right at a glance
+- `test-connection.js` — quick script to confirm the API key + model are wired up correctly before debugging anything else
 
-if (result.success) {
-  console.log(result.jsx); // the generated component code, ready to use
-} else {
-  console.log(result.error); // a human-readable error message
-}
+## Why Gemini and not GPT-4o (for now)
+
+We're supposed to be using GPT-4o, but we're still waiting on an OpenAI key for the team, so I swapped in Gemini (`gemini-flash-latest`) as a stand-in. Two things that cost me time here, in case future-me or a teammate hits the same issue:
+
+- `gemini-1.5-flash` is deprecated — use `gemini-flash-latest`
+- Gemini API keys don't all start with `AIzaSy` like the docs/tutorials assume — newer keys can look like `AQ.`, which had me convinced my key was invalid for a while
+
+Swapping back to GPT-4o later should just mean changing the API call in `generate-component.js` — the prompt engineering and validation logic don't care which model is underneath.
+
+## Handoff to Goutham
+
+`generateComponent(prompt)` is the only function your WebSocket server needs to call. Pass it the prompt string, it returns:
+
+```js
+{ success: true, jsx: "...", error: null }
+// or
+{ success: false, jsx: null, error: "..." }
 ```
 
-**Always returns** an object: `{ success: boolean, jsx?: string, error?: string }`
-**Never throws** — safe to call without wrapping in try/catch
-**Takes a few seconds** per call since it's a real AI request
+Everything upstream of that (telemetry → prompt construction) is Ullas's side, everything downstream (WebSocket → frontend) is yours. I'm not touching either.
 
-## Files in this folder
+## Setup
 
-| File | Purpose |
-|---|---|
-| `system-prompt.js` | The instructions that control how the AI behaves — always outputs a `WizardForm` component using Tailwind CSS |
-| `generate-component.js` | The main function — call `generateComponent(prompt)` from here |
-| `validate-component.js` | Checks AI output is well-formed before it's returned (catches broken code, missing exports, etc.) |
-| `test-connection.js` | Confirms the AI API key + connection works |
-| `test-login-page.js` | Test case: generates a login page |
-| `test-weather-app.js` | Test case: generates a weather app |
-
-## Setup (if running this for the first time)
-
-1. `npm install`
-2. Create a `.env` file with: `GEMINI_API_KEY=your-key-here`
-3. Run any test file: `node test-login-page.js`
-
-## Integration contract (for Gautham's WebSocket server)
-
-Input: `formDescription` string (from the `HIGH_FRUSTRATION` signal)
-Output: pass `result.jsx` into the `GENERATED_COMPONENT` message sent to the frontend
-
-```javascript
-const result = await generateComponent(formDescription);
-
-if (result.success) {
-  // send: { type: "GENERATED_COMPONENT", jsx: result.jsx }
-} else {
-  // log result.error, do not send broken JSX to the frontend
-}
+```bash
+npm install
+node test-connection.js   # confirms your API key works before you try anything else
 ```
 
-## Current model
+If you're on Windows and npm scripts refuse to run in PowerShell, you probably need:
 
-Using Google Gemini (`gemini-flash-latest`) as a free placeholder while the team
-finalizes an OpenAI key. Swapping to GPT-4o later only requires changing the
-import and client setup inside `generate-component.js` — the prompt and logic
-stay the same.
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+(one-time fix, cost me an afternoon the first time I hit it)
 
 ## Status
 
-- [x] AI connection tested and working
-- [x] System prompt enforces consistent `WizardForm` + Tailwind output
-- [x] Login page test passing
-- [x] Weather app test passing
-- [x] Output validation in place
-- [ ] Switch to GPT-4o (pending team API key)
-- [ ] Wired into Gautham's WebSocket server
+Core pipeline works and is tested against real prompts. Next up: swap Gemini for GPT-4o once we have a key, then hand off to Gautham for WebSocket integration.
