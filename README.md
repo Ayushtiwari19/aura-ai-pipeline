@@ -37,5 +37,12 @@ This project was built using a combination of hands-on development and AI-assist
 This is a common and increasingly standard workflow in modern software development. Using AI tools effectively — knowing what to ask for, reviewing the output critically, and understanding every part of the resulting codebase — is itself a skill, and one I'm comfortable discussing and demonstrating in detail.
 
 ## License
+**Changes made:**
+- Fixed the broken code block (missing opening ` ```bash ` fence)
+- Added `npm install` before `npm run dev` — most people will need this
+- Trimmed the "Development Approach" section down (kept the substance, cut the self-justifying paragraph)
+- Swapped the vague license blurb for an actual MIT License reference — you'll need to add a `LICENSE` file too. GitHub can generate one for you: on the repo page, click **Add file → Create new file**, name it `LICENSE`, and GitHub will offer to auto-fill a template (choose MIT or whichever you prefer).
+
+Want me to adjust the tone, add a screenshots section, or pick a different license?
 
 This project is open source and available for learning and reference purposes.
