@@ -11,6 +11,7 @@ import {
 
 import { useAura } from "../context/AuraContext";
 import { generateAuraCode } from "../services/aiService";
+import LoadingOverlay from "./LoadingOverlay";
 
 export default function AskAura() {
   const {
@@ -160,6 +161,8 @@ export default function AskAura() {
         </div>
 
       </div>
+
+      <LoadingOverlay loading={loading} />
 
     </section>
   );

@@ -1,23 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import TelemetryCard from "./TelemetryCard";
+import { useTelemetryContext } from "../context/TelemetryContext";
 
 export default function TelemetryTracker() {
-  const [mouseX, setMouseX] = useState(0);
-  const [mouseY, setMouseY] = useState(0);
-
-  const [velocity, setVelocity] = useState(0);
-
-  const [clicks, setClicks] = useState(0);
-
-  const [rapidClicks, setRapidClicks] = useState(0);
-
-  const [hesitationTime, setHesitationTime] = useState(0);
-
-  const [scrollCount, setScrollCount] = useState(0);
-
-  const [keyPresses, setKeyPresses] = useState(0);
+  const { telemetry, setTelemetry } = useTelemetryContext();
 
   useEffect(() => {
     let lastX = 0;
@@ -25,21 +13,26 @@ export default function TelemetryTracker() {
     let lastTime = Date.now();
 
     const handleMouseMove = (e: MouseEvent) => {
-      setMouseX(e.clientX);
-      setMouseY(e.clientY);
-
       const now = Date.now();
 
       const distance = Math.sqrt(
         Math.pow(e.clientX - lastX, 2) +
-        Math.pow(e.clientY - lastY, 2)
+          Math.pow(e.clientY - lastY, 2)
       );
 
       const deltaTime = now - lastTime;
 
-      if (deltaTime > 0) {
-        setVelocity(Math.round(distance / (deltaTime / 1000)));
-      }
+      const velocity =
+        deltaTime > 0
+          ? Math.round(distance / (deltaTime / 1000))
+          : 0;
+
+      setTelemetry((prev) => ({
+        ...prev,
+        mouseX: e.clientX,
+        mouseY: e.clientY,
+        velocity,
+      }));
 
       lastX = e.clientX;
       lastY = e.clientY;
@@ -49,20 +42,26 @@ export default function TelemetryTracker() {
     window.addEventListener("mousemove", handleMouseMove);
 
     return () =>
-      window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+      window.removeEventListener(
+        "mousemove",
+        handleMouseMove
+      );
+  }, [setTelemetry]);
 
   useEffect(() => {
     let lastClick = 0;
 
     const handleClick = () => {
-      setClicks((prev) => prev + 1);
-
       const now = Date.now();
 
-      if (now - lastClick < 300) {
-        setRapidClicks((prev) => prev + 1);
-      }
+      setTelemetry((prev) => ({
+        ...prev,
+        clicks: prev.clicks + 1,
+        rapidClicks:
+          now - lastClick < 300
+            ? prev.rapidClicks + 1
+            : prev.rapidClicks,
+      }));
 
       lastClick = now;
     };
@@ -70,49 +69,70 @@ export default function TelemetryTracker() {
     window.addEventListener("click", handleClick);
 
     return () =>
-      window.removeEventListener("click", handleClick);
-  }, []);
+      window.removeEventListener(
+        "click",
+        handleClick
+      );
+  }, [setTelemetry]);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrollCount((prev) => prev + 1);
+      setTelemetry((prev) => ({
+        ...prev,
+        scrollCount: prev.scrollCount + 1,
+      }));
     };
 
     window.addEventListener("scroll", handleScroll);
 
     return () =>
-      window.removeEventListener("scroll", handleScroll);
-  }, []);
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+  }, [setTelemetry]);
 
   useEffect(() => {
     const handleKeyDown = () => {
-      setKeyPresses((prev) => prev + 1);
+      setTelemetry((prev) => ({
+        ...prev,
+        keyPresses: prev.keyPresses + 1,
+      }));
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
 
     return () =>
-      window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+  }, [setTelemetry]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setHesitationTime((prev) => prev + 1);
+      setTelemetry((prev) => ({
+        ...prev,
+        hesitationTime: prev.hesitationTime + 1,
+      }));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [setTelemetry]);
 
   return (
     <TelemetryCard
-      mouseX={mouseX}
-      mouseY={mouseY}
-      velocity={velocity}
-      clicks={clicks}
-      rapidClicks={rapidClicks}
-      hesitationTime={hesitationTime}
-      scrollCount={scrollCount}
-      keyPresses={keyPresses}
+      mouseX={telemetry.mouseX}
+      mouseY={telemetry.mouseY}
+      velocity={telemetry.velocity}
+      clicks={telemetry.clicks}
+      rapidClicks={telemetry.rapidClicks}
+      hesitationTime={telemetry.hesitationTime}
+      scrollCount={telemetry.scrollCount}
+      keyPresses={telemetry.keyPresses}
     />
   );
 }
