@@ -56,6 +56,10 @@ or on failure:
   success: false,
   jsx: null,
   error: "..."
+{
+  success: false,
+  jsx: null,
+  error: "..."
 }
 ```
 
