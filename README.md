@@ -1,78 +1,73 @@
-# AuraGen AI Prompt Engineering Pipeline
+# Aura AI Pipeline
 
-This folder contains the AI generation pipeline for AuraGen's self-healing UI system.
-Owned by: Ayush (AI Prompt Engineering)
+This is the AI pipeline part of **AuraGen** — a self-healing UI system we're building for our Advanced Generative AI Engineering Program at Infotact Solutions. Basically the idea is: if a user is struggling on a webpage (too much clicking, hesitating too long), the UI regenerates itself to be simpler. This repo is the part that actually generates the new component.
 
-## What this does
+## Team & Repos
 
-Takes a text description (e.g. "Build a modern React login page with Tailwind CSS")
-and returns AI-generated React component code, ready to be rendered or saved.
+We're 3 people, 3 separate repos, all talking to each other over Socket.io instead of one shared codebase:
 
-This is the piece that turns a `HIGH_FRUSTRATION` signal into an actual fix.
+* **Ayush (me, team lead)** – this repo, handles the AI generation
+* **Goutham** – [AuraGen-Backend](https://github.com/Goutham2306/AuraGen-Backend), Node + Socket.io server that connects frontend and AI
+* **Ullas** – [AuraGen](https://github.com/ullasbr0214/AuraGen), the Next.js frontend that tracks mouse behavior
 
-## How to use it
+## What this repo does
+
+My job was simple on paper: take a prompt describing what the user needs, generate a working React component, send back the JSX. In practice it took a while to get right.
+
+* **system-prompt.js** – the system prompt that tells Gemini how to behave and what format to return
+* **generate-component.js** – the actual `generateComponent()` function, this is what Goutham's backend calls
+* **validate-component.js** – checks the JSX Gemini returns is actually valid before sending it back
+* **test-connection.js** – quick script to check the Gemini API key is working
+* **test-login-page.js / test-weather-app.js** – test prompts I used to simulate frustration scenarios (like a broken login form or a messy weather widget) and see what the model generates
+
+## Using Gemini (not GPT-4o)
+
+We're using Gemini Flash instead of OpenAI because we didn't have an OpenAI key. A few things that tripped me up while setting this up, in case anyone else hits the same stuff:
+
+* Gemini API keys look different from what you'd expect — mine started with `AQ.` not `AIzaSy` like older examples online show, so don't panic if yours looks weird too
+* `gemini-1.5-flash` is deprecated now, had to switch to `gemini-flash-latest`
+* Gemini kept wrapping its JSX output in markdown code fences (` ```jsx `) even when I told it not to, so `validate-component.js` also strips those out before validating
+* If you're on Windows and PowerShell won't let you run npm scripts, run this once: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
+
+## How it connects to the rest of the project
+
+I don't run a server. Goutham's backend directly imports `generateComponent()` from this repo and calls it whenever the frontend sends a telemetry event (basically when `hesitation > 2 || clicks > 4`). Whatever I return gets sent back to the frontend over the `component` socket event. So my whole scope ends at this one function — the actual websocket handling is on Goutham's side, not mine.
+
+## Main function
 
 ```javascript
-const { generateComponent } = require('./generate-component');
+generateComponent(prompt)
+```
 
-const result = await generateComponent('Build a modern React login page with Tailwind CSS');
+Returns:
 
-if (result.success) {
-  console.log(result.jsx); // the generated component code, ready to use
-} else {
-  console.log(result.error); // a human-readable error message
+```javascript
+{
+  success: true,
+  jsx: "...",
+  error: null
 }
 ```
 
-**Always returns** an object: `{ success: boolean, jsx?: string, error?: string }`
-**Never throws** — safe to call without wrapping in try/catch
-**Takes a few seconds** per call since it's a real AI request
-
-## Files in this folder
-
-| File | Purpose |
-|---|---|
-| `system-prompt.js` | The instructions that control how the AI behaves — always outputs a `WizardForm` component using Tailwind CSS |
-| `generate-component.js` | The main function — call `generateComponent(prompt)` from here |
-| `validate-component.js` | Checks AI output is well-formed before it's returned (catches broken code, missing exports, etc.) |
-| `test-connection.js` | Confirms the AI API key + connection works |
-| `test-login-page.js` | Test case: generates a login page |
-| `test-weather-app.js` | Test case: generates a weather app |
-
-## Setup (if running this for the first time)
-
-1. `npm install`
-2. Create a `.env` file with: `GEMINI_API_KEY=your-key-here`
-3. Run any test file: `node test-login-page.js`
-
-## Integration contract (for Gautham's WebSocket server)
-
-Input: `formDescription` string (from the `HIGH_FRUSTRATION` signal)
-Output: pass `result.jsx` into the `GENERATED_COMPONENT` message sent to the frontend
+or on failure:
 
 ```javascript
-const result = await generateComponent(formDescription);
-
-if (result.success) {
-  // send: { type: "GENERATED_COMPONENT", jsx: result.jsx }
-} else {
-  // log result.error, do not send broken JSX to the frontend
+{
+  success: false,
+  jsx: null,
+  error: "..."
 }
 ```
 
-## Current model
+## Running it locally
 
-Using Google Gemini (`gemini-flash-latest`) as a free placeholder while the team
-finalizes an OpenAI key. Swapping to GPT-4o later only requires changing the
-import and client setup inside `generate-component.js` — the prompt and logic
-stay the same.
+```bash
+npm install
+node test-connection.js
+```
+
+If that prints a successful response, the Gemini key is working and you're good.
 
 ## Status
 
-- [x] AI connection tested and working
-- [x] System prompt enforces consistent `WizardForm` + Tailwind output
-- [x] Login page test passing
-- [x] Weather app test passing
-- [x] Output validation in place
-- [ ] Switch to GPT-4o (pending team API key)
-- [ ] Wired into Gautham's WebSocket server
+Pipeline's done and tested — returns valid JSX for the test prompts, confirmed working with Goutham's backend on his end too. Ullas still needs to swap the mock socket connection in his frontend for a real one, and once that's done all three pieces should work together end to end.
