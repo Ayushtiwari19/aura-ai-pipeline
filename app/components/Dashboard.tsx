@@ -11,9 +11,12 @@ import SelfHealingEngine from "./SelfHealingEngine";
 import ErrorBoundary from "./ErrorBoundary";
 import CognitiveGauge from "./CognitiveGauge";
 import ResponseCard from "./ResponseCard";
+import useTelemetry from "../hooks/useTelemetry";
 import Footer from "./Footer";
 
 export default function Dashboard() {
+  const { cognitiveLoad } = useTelemetry();
+
   return (
     <div className="min-h-screen bg-transparent text-white p-8">
 
@@ -80,9 +83,9 @@ export default function Dashboard() {
             <DynamicRenderer />
           </ErrorBoundary>
 
-          <AdaptiveDashboard cognitiveLoad={72} />
+          <AdaptiveDashboard cognitiveLoad={cognitiveLoad} />
 
-          <SelfHealingEngine cognitiveLoad={72} />
+          <SelfHealingEngine cognitiveLoad={cognitiveLoad} />
 
         </div>
 
