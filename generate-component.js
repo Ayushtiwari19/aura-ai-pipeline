@@ -14,7 +14,7 @@ const model = new ChatGoogleGenerativeAI({
  * Generates a React component based on a user prompt, with validation
  * and error handling built in. This is the function Gautham will call.
  * @param {string} userPrompt
- * @returns {Promise<{ success: boolean, jsx?: string, error?: string }>}
+ * @returns {Promise<{ success: boolean, jsx?: string, explanation?: string, error?: string }>}
  */
 async function generateComponent(userPrompt) {
   try {
@@ -23,10 +23,30 @@ async function generateComponent(userPrompt) {
       { role: 'user', content: userPrompt },
     ]);
 
-    let code = response.content;
-    code = code.replace(/```jsx?/g, '').replace(/```/g, '').trim();
+    let raw = response.content;
+    raw = raw.replace(/```json?/g, '').replace(/```/g, '').trim();
 
-    const validation = validateComponent(code);
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error('Failed to parse Gemini JSON output:', parseErr.message);
+      return {
+        success: false,
+        error: 'AI response was not valid JSON.',
+      };
+    }
+
+    const { jsx, explanation } = parsed;
+
+    if (!jsx) {
+      return {
+        success: false,
+        error: 'AI response JSON was missing the "jsx" field.',
+      };
+    }
+
+    const validation = validateComponent(jsx);
 
     if (!validation.isValid) {
       console.warn('Validation issues found:', validation.errors);
@@ -38,7 +58,8 @@ async function generateComponent(userPrompt) {
 
     return {
       success: true,
-      jsx: code,
+      jsx,
+      explanation: explanation || 'Component generated successfully.',
     };
   } catch (err) {
     // Catches network errors, API failures, timeouts, etc.
