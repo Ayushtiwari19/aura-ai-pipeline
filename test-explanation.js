@@ -6,7 +6,7 @@ async function runTest() {
   console.log('Sending test prompt to generateComponent()...\n');
 
   const result = await generateComponent(
-    'Create a simple login form with email and password fields'
+    'Create a pricing section with 3 tiers'
   );
 
   console.log('--- FULL RESULT ---');

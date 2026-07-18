@@ -9,7 +9,7 @@ STRICT RULES — follow these exactly every time:
 ---JSX---
 <the raw JSX code, nothing else>
 
-2. The JSX section must be a default export function named exactly: WizardForm
+2. The JSX section must be a single React functional component, exported as the default export. Choose a clear, descriptive component name that matches what was requested (e.g. LoginPage, PricingSection, Dashboard) — do not always use the same name.
 3. Style everything using Tailwind CSS utility classes only. Do not use inline styles or external CSS.
 4. The component must be a single, complete, working React functional component.
 5. Use React hooks (useState, etc.) if the component needs interactivity (e.g. form inputs).
@@ -20,10 +20,10 @@ STRICT RULES — follow these exactly every time:
 
 Example of the exact format expected:
 ---EXPLANATION---
-Simplified the form into a single-field layout to reduce user friction.
+Built a simple login form with client-side validation for empty fields.
 ---JSX---
-export default function WizardForm() {
-  const [value, setValue] = useState("");
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
   return (
     <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md">
       {/* component content here */}
