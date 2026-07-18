@@ -24,25 +24,34 @@ async function generateComponent(userPrompt) {
     ]);
 
     let raw = response.content;
-    raw = raw.replace(/```json?/g, '').replace(/```/g, '').trim();
+    raw = raw.replace(/```jsx?/g, '').replace(/```/g, '').trim();
 
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (parseErr) {
-      console.error('Failed to parse Gemini JSON output:', parseErr.message);
+    const jsxMarker = '---JSX---';
+    const explanationMarker = '---EXPLANATION---';
+
+    const jsxIndex = raw.indexOf(jsxMarker);
+    const explanationIndex = raw.indexOf(explanationMarker);
+
+    if (jsxIndex === -1 || explanationIndex === -1) {
+      console.error('AI response missing expected markers.');
       return {
         success: false,
-        error: 'AI response was not valid JSON.',
+        error: 'AI response was not in the expected format (missing markers).',
       };
     }
 
-    const { jsx, explanation } = parsed;
+    const explanation = raw
+      .slice(explanationIndex + explanationMarker.length, jsxIndex)
+      .trim();
+
+    const jsx = raw
+      .slice(jsxIndex + jsxMarker.length)
+      .trim();
 
     if (!jsx) {
       return {
         success: false,
-        error: 'AI response JSON was missing the "jsx" field.',
+        error: 'AI response had an empty JSX section.',
       };
     }
 
@@ -62,7 +71,6 @@ async function generateComponent(userPrompt) {
       explanation: explanation || 'Component generated successfully.',
     };
   } catch (err) {
-    // Catches network errors, API failures, timeouts, etc.
     console.error('AI generation failed:', err.message);
     return {
       success: false,
