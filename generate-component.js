@@ -55,7 +55,9 @@ async function generateComponent(userPrompt) {
       };
     }
 
-    const validation = validateComponent(jsx);
+    const cleanedJsx = jsx.replace(/^import\s+.*?;?\s*\n+/gm, '').trim();
+
+    const validation = validateComponent(cleanedJsx);
 
     if (!validation.isValid) {
       console.warn('Validation issues found:', validation.errors);
@@ -67,7 +69,7 @@ async function generateComponent(userPrompt) {
 
     return {
       success: true,
-      jsx,
+      jsx: cleanedJsx,
       explanation: explanation || 'Component generated successfully.',
     };
   } catch (err) {
