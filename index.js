@@ -1,4 +1,10 @@
-// index.js
+// index.js // index.js
+//
+// NOTE: This Express server is NOT currently used in the live AuraGen system.
+// Gautham's backend calls generateComponent() directly via require(), not over HTTP.
+// This file is kept only as an optional manual-testing tool (e.g. via Postman/curl).
+// Do not assume this is part of the real request flow unless the team
+// explicitly switches to the HTTP-proxy architecture (Option B).
 require('dotenv').config();
 const express = require('express');
 const { generateComponent } = require('./generate-component');
